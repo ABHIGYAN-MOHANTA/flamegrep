@@ -1,7 +1,13 @@
-import java.io.*;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.concurrent.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class ConcurrentFileSearch {
     private static final int NUMBER_OF_THREADS = 10;
@@ -23,19 +29,9 @@ public class ConcurrentFileSearch {
             return;
         }
 
-        Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (!attrs.isDirectory()) {
-                    try {
-                        fileQueue.put(file);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        });
+        Files.walk(startPath)
+                .filter(Files::isRegularFile)
+                .forEach(fileQueue::add);
 
         for (int i = 0; i < NUMBER_OF_THREADS; i++) {
             executor.execute(new FileSearchTask());
@@ -48,29 +44,41 @@ public class ConcurrentFileSearch {
     private static class FileSearchTask implements Runnable {
         @Override
         public void run() {
-            try {
-                while (true) {
+            while (true) {
+                try {
                     Path file = fileQueue.poll(1, TimeUnit.SECONDS);
                     if (file == null) {
                         break;
                     }
+                    if (Files.isDirectory(file)) {
+                        continue; // Skip directories
+                    }
                     searchFile(file);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
-            } catch (InterruptedException | IOException e) {
-                Thread.currentThread().interrupt();
             }
         }
 
-        private void searchFile(Path file) throws IOException {
+        private void searchFile(Path file) {
             try (BufferedReader reader = Files.newBufferedReader(file)) {
                 String line;
+                boolean found = false;
                 while ((line = reader.readLine()) != null) {
                     if (line.contains(keyword)) {
                         System.out.println("Found in file: " + file.toString());
+                        found = true;
                         break;
                     }
                 }
+                if (!found) {
+//                    System.out.println("Keyword not found in file: " + file.toString());
+                }
+            } catch (IOException e) {
+//                System.err.println("Error reading file: " + file.toString() + ", " + e.getMessage());
             }
         }
+
     }
 }

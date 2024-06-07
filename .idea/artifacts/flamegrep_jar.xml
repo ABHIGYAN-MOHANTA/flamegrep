@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="flamegrep:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/flamegrep_jar</output-path>
+    <root id="archive" name="flamegrep.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/src/main/resourses/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="flamegrep" />
+    </root>
+  </artifact>
+</component>
