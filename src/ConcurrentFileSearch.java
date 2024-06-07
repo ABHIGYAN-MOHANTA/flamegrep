@@ -10,7 +10,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class ConcurrentFileSearch {
-    private static final int NUMBER_OF_THREADS = 10;
+    private static final int NUMBER_OF_THREADS = 10; //default automate based on system resources
     private static final BlockingQueue<Path> fileQueue = new LinkedBlockingQueue<>();
     private static final ExecutorService executor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
     private static String keyword;
